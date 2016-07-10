@@ -83,16 +83,22 @@ var scaner = {
 		this.end_time = Date.now().toString().slice(0, -3);
 		this.start_time = this.last_request_time || (this.end_time - timeout);
 
-		console.log('start_time=', start_time, ' end_time=', end_time);
+		console.log('start_time=', this.start_time, ' end_time=', this.end_time);
 
-		VK.getFeed(start_time, end_time, this.findPost.bind(this));
+		VK.getFeed(this.start_time, this.end_time, this.findPost.bind(this));
 
 		setTimeout(this.scan.bind(this), timeout * 1000);
 	},
 
 	findPost: function (feed) {
+
+		if (feed.error){
+			console.log(feed);
+			return;			
+		}
+
 		this.last_request_time = this.end_time;
-		
+
 		feed.response.items.map(function(item){
 			if (item.attachments && 
 				item.attachments[0].photo.album_id === -6 && 
