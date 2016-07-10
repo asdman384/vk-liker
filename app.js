@@ -77,17 +77,18 @@ var scaner = {
 	start_time: 0,
 	end_time: 0,
 	last_request_time: 0,
+	timeout: 0,
 
 	scan: function(timeout) {
-
+		this.timeout = timeout;
 		this.end_time = Date.now().toString().slice(0, -3);
-		this.start_time = this.last_request_time || (this.end_time - timeout);
+		this.start_time = this.last_request_time || (this.end_time - this.timeout);
 
 		console.log('start_time=', this.start_time, ' end_time=', this.end_time);
 
 		VK.getFeed(this.start_time, this.end_time, this.findPost.bind(this));
 
-		setTimeout(this.scan.bind(this), timeout * 1000);
+		setTimeout(this.scan.bind(this), this.timeout * 1000);
 	},
 
 	findPost: function (feed) {
