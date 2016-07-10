@@ -12,14 +12,8 @@ var VK = {
 	protocol: 'https:',
   	hostname: 'api.vk.com',  	
   	path: '&access_token=' + token + '&v=5.52',
-  	last_request_time: 0,
 
-  	getFeed: function(callback) {
-
-  		var end_time = Date.now().toString().slice(0, -3);
-  		var start_time = this.last_request_time || (end_time - timeout);
-
-  		console.log('start_time=', start_time, ' end_time=', end_time);
+  	getFeed: function(start_time, end_time, callback) {
 
   		this._doRequest(
   			{
@@ -28,9 +22,7 @@ var VK = {
   				path: '/method/newsfeed.get?source_ids=list2&filters=post&count=3&end_time=' + end_time + '&start_time=' + start_time + this.path
   			}, 
   			callback
-  		);
-
-  		this.last_request_time = end_time;
+  		);  		
 
   	},
 
@@ -54,7 +46,8 @@ var VK = {
 		    resp.on('data', (ch) => { data += ch; } );
 		    resp.on('end', () => {
 				
-				log (data);
+				console.log(data);
+
 		    	data = JSON.parse(data); 
 
 	    		if (data.error) {
@@ -76,30 +69,47 @@ var VK = {
 			}
 		});
 	}
-}
+};
 
-function findPost(item) {
-	if (item.attachments && 
-		item.attachments[0].photo.album_id === -6 && 
-		!item.likes.user_likes) 
-	{
-		var photo = item.attachments[0].photo;
-		VK.addLike(photo.owner_id, photo.id, log)
+
+var scaner = {
+
+	start_time: 0,
+	end_time: 0,
+	last_request_time: 0,
+
+	scan: function(timeout) {
+
+		this.end_time = Date.now().toString().slice(0, -3);
+		this.start_time = this.last_request_time || (this.end_time - timeout);
+
+		console.log('start_time=', start_time, ' end_time=', end_time);
+
+		VK.getFeed(start_time, end_time, this.findPost.bind(this));
+
+		setTimeout(this.scan.bind(this), timeout * 1000);
+	},
+
+	findPost: function (feed) {
+		this.last_request_time = this.end_time;
+		
+		feed.response.items.map(function(item){
+			if (item.attachments && 
+				item.attachments[0].photo.album_id === -6 && 
+				!item.likes.user_likes) 
+			{
+				var photo = item.attachments[0].photo;
+				VK.addLike(photo.owner_id, photo.id, log)
+			}
+		});
 	}
-}
+};
 
 
 function log(msg) {
 	console.log (msg);
 }
 
-function scan() {
 
-	VK.getFeed(function(feed) {	
-		feed.response.items.map(findPost);
-	});
 
-	setTimeout(scan, timeout * 1000);
-}
-
-scan();
+scaner.scan(timeout);
