@@ -92,11 +92,6 @@ var scaner = {
 
 	findPost: function (feed) {
 
-		if (feed.error){
-			console.log(feed);
-			return;			
-		}
-
 		this.last_request_time = this.end_time;
 
 		feed.response.items.map(function(item){
