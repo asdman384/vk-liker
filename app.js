@@ -12,13 +12,14 @@ var VK = {
 	protocol: 'https:',
   	hostname: 'api.vk.com',  	
   	path: '&access_token=' + token + '&v=5.52',
+  	last_request_time: 0,
 
   	getFeed: function(callback) {
 
   		var end_time = Date.now().toString().slice(0, -3);
-  		var start_time = end_time - timeout;
+  		var start_time = this.last_request_time || (end_time - timeout);
 
-  		log(end_time);
+  		console.log('start_time=', start_time, ' end_time=', end_time);
 
   		this._doRequest(
   			{
@@ -28,6 +29,8 @@ var VK = {
   			}, 
   			callback
   		);
+
+  		this.last_request_time = end_time;
 
   	},
 
@@ -50,7 +53,8 @@ var VK = {
 		    
 		    resp.on('data', (ch) => { data += ch; } );
 		    resp.on('end', () => {
-
+				
+				log (data);
 		    	data = JSON.parse(data); 
 
 	    		if (data.error) {
@@ -62,7 +66,15 @@ var VK = {
 		    });
 		};
 
-		https.get(params, getData);
+		var request = https.get(params, getData);
+
+		request.on('error', function(err) {
+			if (err.CODE = 'ENOTFOUND'){
+				console.log('lost connection');
+			} else {
+				console.log(err);
+			}
+		});
 	}
 }
 
