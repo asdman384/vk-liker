@@ -79,8 +79,12 @@ var scaner = {
 	last_request_time: 0,
 	timeout: 0,
 
-	scan: function(timeout) {
+	init: function (timeout) {
 		this.timeout = timeout;
+	},
+
+	scan: function() {
+		
 		this.end_time = Date.now().toString().slice(0, -3);
 		this.start_time = this.last_request_time || (this.end_time - this.timeout);
 
@@ -113,5 +117,5 @@ function log(msg) {
 }
 
 
-
-scaner.scan(timeout);
+scaner.init(timeout)
+scaner.scan();
