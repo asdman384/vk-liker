@@ -4,8 +4,9 @@
  * 
  */ 
 var https = require('https');
+var fs = require('fs');
 var timeout = 30 //sec
-var token = '';
+var token = fs.readFileSync('token','utf8');
 
 var VK = {
 
@@ -88,7 +89,7 @@ var scaner = {
 		this.end_time = Date.now().toString().slice(0, -3);
 		this.start_time = this.last_request_time || (this.end_time - this.timeout);
 
-		console.log('start_time=', this.start_time, ' end_time=', this.end_time);
+		console.log('start_time=', toTime(this.start_time), ' end_time=', toTime(this.end_time));
 
 		VK.getFeed(this.start_time, this.end_time, this.findPost.bind(this));
 
@@ -116,6 +117,9 @@ function log(msg) {
 	console.log (msg);
 }
 
+function toTime(unixtimestamp) {
+	return new Date(unixtimestamp *1000).toLocaleString();
+}
 
 scaner.init(timeout)
 scaner.scan();
