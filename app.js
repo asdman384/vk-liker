@@ -118,7 +118,7 @@ function log(msg) {
 }
 
 function toTime(unixtimestamp) {
-	var dateObj = new Date(unixtimestamp *1000).toLocaleString();
+	var dateObj = new Date(unixtimestamp *1000);
 	return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
 }
 
