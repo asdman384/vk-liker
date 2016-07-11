@@ -9,10 +9,11 @@ var timeout = 30 //sec
 var token = fs.readFileSync('token','utf8');
 
 var VK = {
-
+	
 	protocol: 'https:',
   	hostname: 'api.vk.com',  	
   	path: '&access_token=' + token + '&v=5.52',
+  	avatars_album_id: -6
 
   	getFeed: function(start_time, end_time, callback) {
 
@@ -102,7 +103,7 @@ var scaner = {
 
 		feed.response.items.map(function(item){
 			if (item.attachments && 
-				item.attachments[0].photo.album_id === -6 && 
+				item.attachments[0].photo.album_id === VK.avatars_album_id && 
 				!item.likes.user_likes) 
 			{
 				var photo = item.attachments[0].photo;
