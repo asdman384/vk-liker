@@ -13,7 +13,7 @@ var VK = {
 	protocol: 'https:',
   	hostname: 'api.vk.com',  	
   	path: '&access_token=' + token + '&v=5.52',
-  	avatars_album_id: -6
+  	avatars_album_id: -6,
 
   	getFeed: function(start_time, end_time, callback) {
 
