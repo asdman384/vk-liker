@@ -17,44 +17,41 @@ var VK = {
 
   	getFeed: function(start_time, end_time, callback) {
 
-  		this._doRequest(
-  			{
-  				protocol: this.protocol,
-  				hostname: this.hostname,
-  				path: '/method/newsfeed.get?source_ids=list2&filters=post&count=3&end_time=' + end_time + '&start_time=' + start_time + this.path
-  			}, 
-  			callback
-  		);  		
+  		this._doRequest('/method/newsfeed.get?source_ids=list2&filters=post&count=5&end_time=' + end_time + '&start_time=' + start_time + this.path)
+  		.then(callback)
+  		.catch(this._errHandle); 		
 
   	},
 
   	addLike: function(owner_id, item_id, callback){
-
-  		this._doRequest(
-  			{
-  				protocol: this.protocol,
-  				hostname: this.hostname,
-  				path: '/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.path
-  			}, 
-  			callback
-  		);
+  		
+  		this._doRequest('/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.path)
+  		.then(callback)
+  		.catch(this._errHandle);
   	},
 
-	_doRequest: function(params, callback) {
-		
-		https
-		.get(params, function (resp) {
-			var data = '';
-			resp.on('data', (chunk) => { data += chunk; });
-			resp.on('end', () => { callback(JSON.parse(data)); });
-		})	
-		.on('error', function(err) {
-			if (err.CODE = 'ENOTFOUND'){
-				console.log('lost connection');
-			} else {
-				console.log(err);
-			}
-		});
+	_doRequest: function(path) {
+		var prams = {protocol: this.protocol, hostname: this.hostname,	path: path};
+
+		return new Promise(function(resolve, reject){
+			https
+			.get(prams, function (resp) {
+				var data = '';
+				resp.on('data', (chunk) => { data += chunk; });
+				resp.on('end', () => { resolve(JSON.parse(data)); });
+			})	
+			.on('error', function(err) {
+				if (err.CODE = 'ENOTFOUND'){
+					reject('lost connection');
+				} else {
+					reject(err);
+				}
+			});
+		});		
+	},
+
+	_errHandle: function(err){
+		console.log(err);
 	}
 };
 
@@ -110,8 +107,10 @@ function log(msg) {
 }
 
 function toTime(unixtimestamp) {
-	var dateObj = new Date(unixtimestamp *1000);
-	return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
+    var dateObj = new Date(unixtimestamp *1000);
+    return  ('0' + dateObj.getHours()).slice(-2) + ':' + 
+            ('0' + dateObj.getMinutes()).slice(-2) + ':' + 
+            ('0' + dateObj.getSeconds()).slice(-2);
 }
 
 scaner.init(timeout)
