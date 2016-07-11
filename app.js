@@ -41,16 +41,14 @@ var VK = {
   	},
 
 	_doRequest: function(params, callback) {
-
-		function getData(resp) {
-		    var data = '';
-		    resp.on('data', (chunk) => { data += chunk; });
-		    resp.on('end', () => { callback(JSON.parse(data)); });
-		};
-
-		var request = https.get(params, getData);
-
-		request.on('error', function(err) {
+		
+		https
+		.get(params, function (resp) {
+			var data = '';
+			resp.on('data', (chunk) => { data += chunk; });
+			resp.on('end', () => { callback(JSON.parse(data)); });
+		})	
+		.on('error', function(err) {
 			if (err.CODE = 'ENOTFOUND'){
 				console.log('lost connection');
 			} else {
