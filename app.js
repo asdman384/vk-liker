@@ -44,21 +44,8 @@ var VK = {
 
 		function getData(resp) {
 		    var data = '';
-		    
-		    resp.on('data', (ch) => { data += ch; } );
-		    resp.on('end', () => {
-				
-				console.log(data);
-
-		    	data = JSON.parse(data); 
-
-	    		if (data.error) {
-					log(data.error.error_msg);
-					process.exit();
-				}
-
-		    	callback(data); 
-		    });
+		    resp.on('data', (chunk) => { data += chunk; });
+		    resp.on('end', () => { callback(JSON.parse(data)); });
 		};
 
 		var request = https.get(params, getData);
@@ -78,17 +65,17 @@ var scaner = {
 
 	start_time: 0,
 	end_time: 0,
-	last_request_time: 0,
+	last_success_request_time: 0,
 	timeout: 0,
 
-	init: function (timeout) {
+	init: function(timeout) {
 		this.timeout = timeout;
 	},
 
 	scan: function() {
 		
 		this.end_time = Date.now().toString().slice(0, -3);
-		this.start_time = this.last_request_time || (this.end_time - this.timeout);
+		this.start_time = this.last_success_request_time || (this.end_time - this.timeout);
 
 		console.log('start_time=', toTime(this.start_time), ' end_time=', toTime(this.end_time));
 
@@ -97,17 +84,23 @@ var scaner = {
 		setTimeout(this.scan.bind(this), this.timeout * 1000);
 	},
 
-	findPost: function (feed) {
+	findPost: function(feed) {
+		
+    		if (feed.error) {
+			log(feed.error.error_msg);
+			process.exit();
+		}
 
-		this.last_request_time = this.end_time;
+		this.last_success_request_time = this.end_time;
 
-		feed.response.items.map(function(item){
+		feed.response.items.map(function(item) {
 			if (item.attachments && 
 				item.attachments[0].photo.album_id === VK.avatars_album_id && 
 				!item.likes.user_likes) 
 			{
 				var photo = item.attachments[0].photo;
-				VK.addLike(photo.owner_id, photo.id, log)
+				VK.addLike(photo.owner_id, photo.id, log);
+				log(item.attachments[0]);
 			}
 		});
 	}
