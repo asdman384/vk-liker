@@ -118,7 +118,8 @@ function log(msg) {
 }
 
 function toTime(unixtimestamp) {
-	return new Date(unixtimestamp *1000).toLocaleString();
+	var dateObj = new Date(unixtimestamp *1000).toLocaleString();
+	return dateObj.getHours() + ':' + dateObj.getMinutes() + ':' + dateObj.getSeconds();
 }
 
 scaner.init(timeout)
