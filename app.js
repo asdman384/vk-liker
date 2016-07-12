@@ -90,6 +90,7 @@ var scaner = {
 
 		feed.response.items.map(function(item) {
 			if (item.attachments && 
+				item.attachments[0].photo &&
 				item.attachments[0].photo.album_id === VK.avatars_album_id && 
 				!item.likes.user_likes) 
 			{
