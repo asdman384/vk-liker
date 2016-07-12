@@ -96,11 +96,23 @@ var scaner = {
 			{
 				var photo = item.attachments[0].photo;
 				VK.addLike(photo.owner_id, photo.id, log);
-				log(item.attachments[0]);
+				Termux.notify(
+                    'count:' + item.likes.count
+                    , JSON.stringify(item.post_source)
+                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
+                );
 			}
 		});
 	}
 };
+
+var Termux = {
+
+    notify: function(title, text, url) {
+        console.log('termux-notification -c ' + text + ' -t ' + title + ' -u ' + url);
+    }
+
+}
 
 
 function log(msg) {
