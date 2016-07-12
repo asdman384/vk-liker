@@ -82,7 +82,7 @@ var scaner = {
 
 	findPost: function(feed) {
 		
-    		if (feed.error) {
+		if (feed.error) {
 			log(feed.error.error_msg);
 			process.exit();
 		}
@@ -90,16 +90,15 @@ var scaner = {
 		this.last_success_request_time = this.end_time;
 
 		feed.response.items.map(function(item) {
-			if (item.attachments && 
-				item.attachments[0].photo &&
-				item.attachments[0].photo.album_id === VK.avatars_album_id && 
-				!item.likes.user_likes) 
-			{
+			if (item.post_source.data === "profile_photo" ) {
 				var photo = item.attachments[0].photo;
+                var profile = feed.response.profiles.find(item => item.id === photo.owner_id);
+
 				VK.addLike(photo.owner_id, photo.id, log);
+
 				Termux.notify(
-                    'count:' + item.likes.count
-                    , JSON.stringify(item.post_source)
+                    profile.first_name + ' ' + profile.last_name                    
+                    , 'count:' + item.likes.count
                     , photo.photo_1280 || photo.photo_807 || photo.photo_604
                 );
 			}
