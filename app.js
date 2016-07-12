@@ -7,6 +7,7 @@ var https = require('https');
 var fs = require('fs');
 var timeout = 30 //sec
 var token = fs.readFileSync('token','utf8');
+var exec = require('child_process').exec;
 
 var VK = {
 	
@@ -109,7 +110,7 @@ var scaner = {
 var Termux = {
 
     notify: function(title, text, url) {
-        console.log('termux-notification -c ' + text + ' -t ' + title + ' -u ' + url);
+        exec('termux-notification -c ' + text + ' -t ' + title + ' -u ' + url);        
     }
 
 }
