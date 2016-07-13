@@ -73,7 +73,7 @@ var scaner = {
 		this.end_time = Date.now().toString().slice(0, -3);
 		this.start_time = this.last_success_request_time || (this.end_time - this.timeout);
 
-		console.log('start_time=', toTime(this.start_time), ' end_time=', toTime(this.end_time));
+		console.log('start=', toTime(this.start_time), ' end=', toTime(this.end_time));
 
 		VK.getFeed(this.start_time, this.end_time, this.findPost.bind(this));
 
@@ -92,21 +92,20 @@ var scaner = {
 		feed.response.items.map(function(item) {
 			if (item.post_source.data === "profile_photo" ) {
 				var photo = item.attachments[0].photo;
-                var profile = feed.response.profiles.find(item => item.id === photo.owner_id);
-
+                		var profile = feed.response.profiles.find(item => item.id === photo.owner_id);
+                		
 				VK.addLike(photo.owner_id, photo.id, log);
-
-				Termux.notify(
-                    profile.first_name + ' ' + profile.last_name                    
-                    , 'count:' + item.likes.count
-                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
-                );
+				Phone.notify(
+		                    profile.first_name + '_' + profile.last_name                    
+		                    , 'likes_count:' + (item.likes.count + 1)
+		                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
+		                );
 			}
 		});
 	}
 };
 
-var Termux = {
+var Phone = {
 
     notify: function(title, text, url) {
         exec('termux-notification -c ' + text + ' -t ' + title + ' -u ' + url);        
