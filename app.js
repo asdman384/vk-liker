@@ -6,7 +6,7 @@
 var https = require('https');
 var fs = require('fs');
 var timeout = 30 //sec
-var token = fs.readFileSync('token','utf8');
+var token = fs.readFileSync('token','utf8').replace(/\n/, '');
 var exec = require('child_process').exec;
 
 var VK = {
@@ -32,17 +32,16 @@ var VK = {
   	},
 
 	_doRequest: function(path) {
-		var prams = {protocol: this.protocol, hostname: this.hostname,	path: path};
-
+		var params = {protocol: this.protocol, hostname: this.hostname,	path: path};
 		return new Promise(function(resolve, reject){
 			https
-			.get(prams, function (resp) {
+			.get(params, function (resp) {
 				var data = '';
 				resp.on('data', (chunk) => { data += chunk; });
 				resp.on('end', () => { resolve(JSON.parse(data)); });
 			})	
 			.on('error', function(err) {
-				if (err.CODE = 'ENOTFOUND'){
+				if (err.CODE === 'ENOTFOUND'){
 					reject('lost connection');
 				} else {
 					reject(err);
@@ -95,11 +94,11 @@ var scaner = {
                 		var profile = feed.response.profiles.find(item => item.id === photo.owner_id);
                 		
 				VK.addLike(photo.owner_id, photo.id, log);
-				Phone.notify(
-		                    profile.first_name + '_' + profile.last_name                    
-		                    , 'likes_count:' + (item.likes.count + 1)
-		                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
-		                );
+//				Phone.notify(
+//		                    profile.first_name + '_' + profile.last_name                    
+//		                    , 'likes_count:' + (item.likes.count + 1)
+//		                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
+//		                );
 			}
 		});
 	}
