@@ -14,12 +14,36 @@ var VK = {
 
     protocol: 'https:',
     hostname: 'api.vk.com',
-    path: '&access_token=' + token + '&v=5.52',
+    token: '&access_token=' + token + '&v=5.52',
     avatars_album_id: -6,
+
+    search: function (callback) {
+
+        var groups = [{"id": 20629724, "name": "Хабрахабр"}],
+            countries = [{"id": 2, "title": "Украина"}],
+            cities = [{"id": 1057, "title": "Львов"}],
+            method = 'users.search',
+            params = '?' +
+                    '&count=1000' +
+                    '&fields=photo_id' +
+                    '&country=' + countries[0].id +
+                    '&city=' + cities[0].id +
+                    '&sex=1' +
+                    '&age_from=18'+
+                    '&age_to=29'+
+                    '&has_photo=1'+
+                    '&group_id='+ groups[0].id;
+
+        var path = '/method/' + method + params + this.token;
+
+        this._doRequest(path)
+            .then(callback)
+            .catch(this._errHandle);
+    },
 
     getFeed: function (start_time, end_time, callback) {
 
-        this._doRequest('/method/newsfeed.get?source_ids=list2&filters=post&count=5&end_time=' + end_time + '&start_time=' + start_time + this.path)
+        this._doRequest('/method/newsfeed.get?source_ids=list2&filters=post&count=5&end_time=' + end_time + '&start_time=' + start_time + this.token)
             .then(callback)
             .catch(this._errHandle);
 
@@ -27,19 +51,20 @@ var VK = {
 
     addLike: function (owner_id, item_id, callback) {
 
-        this._doRequest('/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.path)
+        this._doRequest('/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.token)
             .then(callback)
             .catch(this._errHandle);
     },
 
     _doRequest: function (path) {
         var params = {protocol: this.protocol, hostname: this.hostname, path: path};
+
         return new Promise(function (resolve, reject) {
             https
                 .get(params, function (resp) {
                     var data = '';
                     resp.on('data', (chunk) => {data += chunk;});
-                    resp.on('end', () => {resolve(JSON.parse(data));});
+                    resp.on('end', () => {resolve(data);});
                 })
                 .on('error', function (err) {
                     if (err.CODE === 'ENOTFOUND') {
@@ -52,7 +77,7 @@ var VK = {
     },
 
     _errHandle: function (err) {
-        console.log(err);
+        log(err);
     }
 };
 
@@ -82,6 +107,8 @@ var scaner = {
 
     findPost: function (feed) {
 
+        feed = JSON.parse(feed);
+
         if (feed.error) {
             log(feed.error.error_msg);
             process.exit();
@@ -95,13 +122,16 @@ var scaner = {
                 var photo = item.attachments[0].photo;
                 var profile = feed.response.profiles.find(item => item.id === photo.owner_id);
 
-                VK.addLike(photo.owner_id, photo.id, log);
-                log(
-                    toTime(this.end_time)
-                    , profile.first_name + '_' + profile.last_name
-                    , 'likes_count:' + (item.likes.count + 1)
-                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
+                VK.addLike(
+                    photo.owner_id,
+                    photo.id,
+                    log.bind(null,
+                        toTime(this.end_time),
+                        profile.first_name + '_' + profile.last_name,
+                        photo.photo_1280 || photo.photo_807 || photo.photo_604
+                    )
                 );
+
             }
         });
     }
@@ -113,11 +143,11 @@ var Phone = {
         exec('termux-notification -c ' + text + ' -t ' + title + ' -u ' + url);
     }
 
-}
+};
 
 
-function log(msg) {
-    console.log(msg);
+function log() {
+    console.log(arguments);
 }
 
 function toTime(unixtimestamp) {
@@ -127,5 +157,18 @@ function toTime(unixtimestamp) {
         ('0' + dateObj.getSeconds()).slice(-2);
 }
 
-scaner.init(timeout)
+scaner.init(timeout);
 scaner.scan();
+
+
+// var g = JSON.parse(fs.readFileSync('', 'utf8'));
+// var timeout = 1000
+// g.response.items.map(function (item) {
+//     if (!item.photo_id) return;
+//     var photo_id = item.photo_id.split('_')[1];
+//     timeout += 1000;
+//     setTimeout(function () {
+//         VK.addLike(item.id, photo_id, log.bind(null, item.id, photo_id, item.last_name+' '+item.first_name));
+//     },timeout)
+// });
+// log(VK.search());
