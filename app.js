@@ -1,11 +1,12 @@
 /*
+ * usage: nohup node app.js > log.log 2>&1 &
  * vk auth:
  * 1. https://oauth.vk.com/authorize?client_id=5503631&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=73730&response_type=token&v=5.52
  * 
  */ 
 var https = require('https');
 var fs = require('fs');
-var timeout = 30 //sec
+var timeout = 15; //sec
 var token = fs.readFileSync('token','utf8').replace(/\n/, '');
 var exec = require('child_process').exec;
 
@@ -72,7 +73,7 @@ var scaner = {
 		this.end_time = Date.now().toString().slice(0, -3);
 		this.start_time = this.last_success_request_time || (this.end_time - this.timeout);
 
-		console.log('start=', toTime(this.start_time), ' end=', toTime(this.end_time));
+		//console.log('start=', toTime(this.start_time), ' end=', toTime(this.end_time));
 
 		VK.getFeed(this.start_time, this.end_time, this.findPost.bind(this));
 
@@ -89,16 +90,19 @@ var scaner = {
 		this.last_success_request_time = this.end_time;
 
 		feed.response.items.map(function(item) {
+			
+			log(item);
+			
 			if (item.post_source.data === "profile_photo" ) {
 				var photo = item.attachments[0].photo;
                 		var profile = feed.response.profiles.find(item => item.id === photo.owner_id);
                 		
 				VK.addLike(photo.owner_id, photo.id, log);
-//				Phone.notify(
-//		                    profile.first_name + '_' + profile.last_name                    
-//		                    , 'likes_count:' + (item.likes.count + 1)
-//		                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
-//		                );
+				log(
+		                    profile.first_name + '_' + profile.last_name                    
+		                    , 'likes_count:' + (item.likes.count + 1)
+		                    , photo.photo_1280 || photo.photo_807 || photo.photo_604
+		                );
 			}
 		});
 	}
