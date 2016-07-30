@@ -17,24 +17,17 @@ var VK = {
     token: '&access_token=' + token + '&v=5.52',
     avatars_album_id: -6,
 
-    search: function (callback) {
+    search: function (params, callback) {
+        var method = 'users.search?',
+            path = '/method/' + method;
 
-        var groups = [{"id": 20629724, "name": "Хабрахабр"}],
-            countries = [{"id": 2, "title": "Украина"}],
-            cities = [{"id": 1057, "title": "Львов"}],
-            method = 'users.search',
-            params = '?' +
-                    '&count=1000' +
-                    '&fields=photo_id' +
-                    '&country=' + countries[0].id +
-                    '&city=' + cities[0].id +
-                    '&sex=1' +
-                    '&age_from=18'+
-                    '&age_to=29'+
-                    '&has_photo=1'+
-                    '&group_id='+ groups[0].id;
-
-        var path = '/method/' + method + params + this.token;
+        for (var key in params) {
+            if (params.hasOwnProperty(key)) {
+                var value = params[key];
+                path += '&' + key + '=' + value;
+            }
+        }
+        path += this.token;
 
         this._doRequest(path)
             .then(callback)
@@ -49,11 +42,8 @@ var VK = {
 
     },
 
-    addLike: function (owner_id, item_id, callback) {
-
-        this._doRequest('/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.token)
-            .then(callback)
-            .catch(this._errHandle);
+    addLike: function (owner_id, item_id) {
+        return this._doRequest('/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.token);
     },
 
     _doRequest: function (path) {
@@ -80,7 +70,6 @@ var VK = {
         log(err);
     }
 };
-
 
 var scaner = {
 
@@ -145,9 +134,8 @@ var Phone = {
 
 };
 
-
 function log() {
-    console.log(arguments);
+    console.log((new Date().toLocaleString()), arguments);
 }
 
 function toTime(unixtimestamp) {
@@ -160,15 +148,3 @@ function toTime(unixtimestamp) {
 scaner.init(timeout);
 scaner.scan();
 
-
-// var g = JSON.parse(fs.readFileSync('', 'utf8'));
-// var timeout = 1000
-// g.response.items.map(function (item) {
-//     if (!item.photo_id) return;
-//     var photo_id = item.photo_id.split('_')[1];
-//     timeout += 1000;
-//     setTimeout(function () {
-//         VK.addLike(item.id, photo_id, log.bind(null, item.id, photo_id, item.last_name+' '+item.first_name));
-//     },timeout)
-// });
-// log(VK.search());
