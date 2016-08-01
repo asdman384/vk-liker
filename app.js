@@ -9,67 +9,7 @@ var fs = require('fs');
 var timeout = 15; //sec
 var token = fs.readFileSync('token', 'utf8').replace(/\n/, '');
 var exec = require('child_process').exec;
-
-var VK = {
-
-    protocol: 'https:',
-    hostname: 'api.vk.com',
-    token: '&access_token=' + token + '&v=5.52',
-    avatars_album_id: -6,
-
-    search: function (params, callback) {
-        var method = 'users.search?',
-            path = '/method/' + method;
-
-        for (var key in params) {
-            if (params.hasOwnProperty(key)) {
-                var value = params[key];
-                path += '&' + key + '=' + value;
-            }
-        }
-        path += this.token;
-
-        this._doRequest(path)
-            .then(callback)
-            .catch(this._errHandle);
-    },
-
-    getFeed: function (start_time, end_time, callback) {
-
-        this._doRequest('/method/newsfeed.get?source_ids=list2&filters=post&count=5&end_time=' + end_time + '&start_time=' + start_time + this.token)
-            .then(callback)
-            .catch(this._errHandle);
-
-    },
-
-    addLike: function (owner_id, item_id) {
-        return this._doRequest('/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.token);
-    },
-
-    _doRequest: function (path) {
-        var params = {protocol: this.protocol, hostname: this.hostname, path: path};
-
-        return new Promise(function (resolve, reject) {
-            https
-                .get(params, function (resp) {
-                    var data = '';
-                    resp.on('data', (chunk) => {data += chunk;});
-                    resp.on('end', () => {resolve(data);});
-                })
-                .on('error', function (err) {
-                    if (err.CODE === 'ENOTFOUND') {
-                        reject('lost connection');
-                    } else {
-                        reject(err);
-                    }
-                });
-        });
-    },
-
-    _errHandle: function (err) {
-        log(err);
-    }
-};
+var VK  = require('vk')(fs.readFileSync('token', 'utf8').replace(/\n/, ''));
 
 var scaner = {
 

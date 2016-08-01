@@ -1,16 +1,15 @@
-var https = require('https');
-var fs = require('fs');
-var DataBase = require('jugglingdb').Schema;
-
-var token = fs.readFileSync('token', 'utf8').replace(/\n/, '');
+var fs          = require('fs');
+var util        = require('util');
+var VK          = require('vk')(fs.readFileSync('token', 'utf8').replace(/\n/, ''));
+var DataBase    = require('jugglingdb').Schema;
+var TelegramBot = require('node-telegram-bot-api');
 
 var db = new DataBase('mysql', {
     host: '192.168.33.33',
     database: 'scotchbox',
     username: 'root',
-    password: ''
+    password: 'root'
 });
-
 var girlsLvovTable = db.define('girls-lvov', {
     id:             {type: Number},
     photo_id:       {type: String},
@@ -23,91 +22,54 @@ var girlsLvovTable = db.define('girls-lvov', {
     last_update:    {type: String},
     is_liked:       {type: Number}
 });
+var telegramBot = new TelegramBot(fs.readFileSync('telegram-bot-token', 'utf8').replace(/\n/, ''), {polling: true});
+var tgChatId = 137905286;
 
+telegramBot.on('message', function (msg) {
 
-var VK = {
+    var text = '123';
+    telegramBot.sendMessage(tgChatId, text);
+});
 
-    protocol: 'https:',
-    hostname: 'api.vk.com',
-    token: '&access_token=' + token + '&v=5.52',
-    avatars_album_id: -6,
+/* MAIN */
+function liker(captcha) {
 
-    search: function (params, callback) {
-        var method = 'users.search?',
-            path = '/method/' + method;
-
-        for (var key in params) {
-            if (params.hasOwnProperty(key)) {
-                var value = params[key];
-                path += '&' + key + '=' + value;
-            }
+    girlsLvovTable.findOne(
+        {
+            where: {is_liked: 0},
+            order: 'last_update DESC'
         }
-        path += this.token;
-
-        this._doRequest(path)
-            .then(callback)
-            .catch(this._errHandle);
-    },
-
-    getFeed: function (start_time, end_time, callback) {
-
-        this._doRequest('/method/newsfeed.get?source_ids=list2&filters=post&count=5&end_time=' + end_time + '&start_time=' + start_time + this.token)
-            .then(callback)
-            .catch(this._errHandle);
-
-    },
-
-    addLike: function (owner_id, item_id) {
-        var path = '/method/likes.add?type=photo&owner_id=' + owner_id + '&item_id=' + item_id + this.token;
-
-        return this._doRequest(path);
-    },
-
-    _doRequest: function (path) {
-        var params = {protocol: this.protocol, hostname: this.hostname, path: path};
-
-        return new Promise(function (resolve, reject) {
-            https
-                .get(params, function (resp) {
-                    var data = '';
-                    resp.on('data', (chunk) => {data += chunk;});
-                    resp.on('end', () => {resolve(data);});
-                })
-                .on('error', function (err) {
-                    if (err.CODE === 'ENOTFOUND') {
-                        reject('lost connection');
-                    } else {
-                        reject(err);
-                    }
-                });
-        });
-    },
-
-    _errHandle: function (err) {
-        log(err);
-    }
-};
-
-function log() {
-    console.log((new Date().toLocaleString()), arguments);
+    ).then(
+        doLike.bind(null, captcha)
+    ).then(
+        actionAfterLike
+    ).then(
+        setTimeout.bind(null, liker, randomInt(30000, 45000)) //  <<<<<<<-------- ENTER Recursion;
+    ).catch(
+        function (msg) {
+            log(msg);
+            if(msg.data.error)
+                telegramBot.sendMessage(tgChatId, JSON.stringify(msg));
+            process.exit();
+        }
+    );
 }
 
-function randomInt(min, max) {
-    return (Math.ceil(Math.random() * (max - min)) + min);
-}
+liker();
 
 
-
-function doLike(girl) {
+function doLike(captcha, girl) {
 
     var photo_id = girl.photo_id.split('_')[1];
 
-    var doLikepromise = VK.addLike(girl.id, photo_id).then(function (response) {
-        log(girl.last_name, response);
-        response = JSON.parse(response);
+    var doLikepromise = VK.addLike(girl.id, photo_id, captcha).then(function (response) {
+
+        log('https://new.vk.com/id' + girl.id, response.data);
+
+        response.data = JSON.parse(response.data);
 
         return new Promise(function (resolve, reject) {
-            if(response.error){
+            if(response.data.error){
                 reject(response);
             } else {
                 resolve(girl);
@@ -126,28 +88,12 @@ function actionAfterLike(girl) {
     return new Promise(function (ok) { ok(); });
 }
 
-/* MAIN */
-function liker() {
-
-    girlsLvovTable.findOne(
-        {
-            where: {is_liked: 0},
-            order: 'last_update DESC'
-        }
-    ).then(
-        doLike
-    ).then(
-        actionAfterLike
-    ).then(
-        setTimeout.bind(null, liker, randomInt(30000, 45000)) //  <<<<<<<-------- ENTER Recursion;
-    ).catch(
-        function (msg) {
-            log(msg);
-            process.exit();
-        }
-    );
-
+//helpers
+function log() {
+    console.log((new Date().toLocaleString()), arguments);
+}
+function randomInt(min, max) {
+    return (Math.ceil(Math.random() * (max - min)) + min);
 }
 
-liker();
 
