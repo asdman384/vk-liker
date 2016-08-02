@@ -1,7 +1,7 @@
-var fs          = require('fs');
-var util        = require('util');
-var VK          = require('vk')(fs.readFileSync('token', 'utf8').replace(/\n/, ''));
-var DataBase    = require('jugglingdb').Schema;
+var fs = require('fs');
+var util = require('util');
+var VK = require('vk')(fs.readFileSync('token', 'utf8').replace(/\n/, ''));
+var DataBase = require('jugglingdb').Schema;
 var TelegramBot = require('node-telegram-bot-api');
 
 var db = new DataBase('mysql', {
@@ -11,24 +11,27 @@ var db = new DataBase('mysql', {
     password: 'root'
 });
 var girlsLvovTable = db.define('girls-lvov', {
-    id:             {type: Number},
-    photo_id:       {type: String},
-    last_seen:      {type: Number},
-    first_name:     {type: String},
-    last_name:      {type: String},
-    b_year:         {type: Number},
-    b_month:        {type: Number},
-    b_day:          {type: Number},
-    last_update:    {type: String},
-    is_liked:       {type: Number}
+    id: {type: Number},
+    photo_id: {type: String},
+    last_seen: {type: Number},
+    first_name: {type: String},
+    last_name: {type: String},
+    b_year: {type: Number},
+    b_month: {type: Number},
+    b_day: {type: Number},
+    last_update: {type: String},
+    is_liked: {type: Number}
 });
 var telegramBot = new TelegramBot(fs.readFileSync('telegram-bot-token', 'utf8').replace(/\n/, ''), {polling: true});
 var tgChatId = 137905286;
 
 telegramBot.on('message', function (msg) {
-
-    var text = '123';
-    telegramBot.sendMessage(tgChatId, text);
+    var reply_to_message = JSON.parse(msg.reply_to_message.text);
+    var captcha = {
+        captcha_sid: reply_to_message.captcha_sid,
+        captcha_key: msg.text
+    };
+    liker(captcha);
 });
 
 /* MAIN */
@@ -46,17 +49,47 @@ function liker(captcha) {
     ).then(
         setTimeout.bind(null, liker, randomInt(30000, 45000)) //  <<<<<<<-------- ENTER Recursion;
     ).catch(
-        function (msg) {
-            log(msg);
-            if(msg.data.error)
-                telegramBot.sendMessage(tgChatId, JSON.stringify(msg));
-            process.exit();
-        }
+        errorHandler
     );
 }
 
 liker();
 
+
+function errorHandler(msg) {
+    log(msg);
+
+    if (msg.data.error) {
+
+        if (msg.data.error.error_code === VK.errors.not_found) {
+
+            girlsLvovTable
+                .update(
+                    {where: {id: msg.girl.id}, update: {is_liked: 2}}
+                ).then(
+                setTimeout.bind(null, liker, randomInt(30000, 45000))
+            );
+
+        } else if(msg.data.error.error_code === VK.errors.captcha_need) {
+
+            telegramBot.sendMessage(tgChatId, JSON.stringify(
+                {
+                    captcha_sid: msg.data.error.captcha_sid,
+                    captcha_img: msg.data.error.captcha_img
+                })
+            );
+
+        } else {
+            telegramBot.sendMessage(tgChatId, JSON.stringify(msg)).then(process.exit);
+        }
+
+    }
+    else {
+
+        telegramBot.sendMessage(tgChatId, JSON.stringify(msg)).then(process.exit);
+
+    }
+}
 
 function doLike(captcha, girl) {
 
@@ -69,7 +102,8 @@ function doLike(captcha, girl) {
         response.data = JSON.parse(response.data);
 
         return new Promise(function (resolve, reject) {
-            if(response.data.error){
+            if (response.data.error) {
+                response['girl'] = girl;
                 reject(response);
             } else {
                 resolve(girl);
@@ -85,12 +119,14 @@ function actionAfterLike(girl) {
 
     girlsLvovTable.update({where: {id: girl.id}, update: {is_liked: 1}});
 
-    return new Promise(function (ok) { ok(); });
+    return new Promise(function (ok) {
+        ok();
+    });
 }
 
 //helpers
 function log() {
-    console.log((new Date().toLocaleString()), arguments);
+    console.log((new Date().toLocaleString()), util.inspect(arguments));
 }
 function randomInt(min, max) {
     return (Math.ceil(Math.random() * (max - min)) + min);
