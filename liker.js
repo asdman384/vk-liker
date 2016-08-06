@@ -2,7 +2,7 @@ var fs = require('fs');
 var util = require('util');
 var VK = require('vk')(fs.readFileSync('token', 'utf8').replace(/\n/, ''));
 var DataBase = require('jugglingdb').Schema;
-var TelegramBot = require('node-telegram-bot-api');
+var TelegramBot = require('node-telegram-bot-api'); // https://github.com/yagop/node-telegram-bot-api
 
 var db = new DataBase('mysql', {
     host: '192.168.33.33',
@@ -26,12 +26,18 @@ var telegramBot = new TelegramBot(fs.readFileSync('telegram-bot-token', 'utf8').
 var tgChatId = 137905286;
 
 telegramBot.on('message', function (msg) {
-    var reply_to_message = JSON.parse(msg.reply_to_message.text);
-    var captcha = {
-        captcha_sid: reply_to_message.captcha_sid,
-        captcha_key: msg.text
-    };
-    liker(captcha);
+
+    if (msg.reply_to_message) {
+        liker({
+            captcha_sid: msg.reply_to_message.text.split('\n')[0],
+            captcha_key: msg.text
+        });
+    }
+
+    if (msg.text === "/retry"){
+        liker()
+    }
+
 });
 
 /* MAIN */
@@ -47,13 +53,11 @@ function liker(captcha) {
     ).then(
         actionAfterLike
     ).then(
-        setTimeout.bind(null, liker, randomInt(30000, 45000)) //  <<<<<<<-------- ENTER Recursion;
+        setTimeout.bind(null, liker, randomInt(20000, 30000)) //  <<<<<<<-------- ENTER Recursion;
     ).catch(
         errorHandler
     );
 }
-
-liker();
 
 
 function errorHandler(msg) {
@@ -70,14 +74,13 @@ function errorHandler(msg) {
                 setTimeout.bind(null, liker, randomInt(30000, 45000))
             );
 
-        } else if(msg.data.error.error_code === VK.errors.captcha_need) {
+        } else if (msg.data.error.error_code === VK.errors.captcha_need) {
 
-            telegramBot.sendMessage(tgChatId, JSON.stringify(
-                {
-                    captcha_sid: msg.data.error.captcha_sid,
-                    captcha_img: msg.data.error.captcha_img
-                })
-            );
+            telegramBot.sendMessage(tgChatId, msg.data.error.captcha_sid + '\n' + msg.data.error.captcha_img);
+
+        } else if (msg.data.error.error_code === VK.errors.flood_control) {
+
+            telegramBot.sendMessage(tgChatId, "flood_control");
 
         } else {
             telegramBot.sendMessage(tgChatId, JSON.stringify(msg)).then(process.exit);
